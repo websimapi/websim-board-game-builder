@@ -41,9 +41,16 @@
         <div class="bottom-controls">
             <div class="instructions">Select a piece to paint on the grid</div>
             
+            <div id="tag-filters" class="tag-filters">
+                <!-- Tags injected here -->
+            </div>
+
             <div class="palette-dock">
-                <button id="new-piece-btn" class="palette-item add-new" title="Create New Piece">
+                <button id="new-piece-btn" class="palette-item action-icon" title="Create New Piece">
                     <span>+</span>
+                </button>
+                <button id="edit-piece-btn" class="palette-item action-icon" title="Edit Selected Piece">
+                    <span>✎</span>
                 </button>
                 <div class="divider"></div>
                 <div id="palette-list" class="palette-scroll">
@@ -110,6 +117,12 @@
                 <div class="form-group">
                     <label>Label</label>
                     <input type="text" id="piece-text" placeholder="Start, 1, 2..." maxlength="8">
+                </div>
+
+                <div class="form-group">
+                    <label>Tag / Category</label>
+                    <input type="text" id="piece-tag" placeholder="e.g. Path, Enemy, Decor" list="existing-tags">
+                    <datalist id="existing-tags"></datalist>
                 </div>
 
                 <button id="add-piece-btn" class="primary-btn">Add to Palette</button>

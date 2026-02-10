@@ -2,10 +2,10 @@
 
 // Default palette for new projects
 const defaultPalette = [
-    { id: 'p1', shape: 'square', color: '#e74c3c', text: 'START' },
-    { id: 'p2', shape: 'square', color: '#f1c40f', text: '?' },
-    { id: 'p3', shape: 'circle', color: '#3498db', text: '1' },
-    { id: 'p4', shape: 'circle', color: '#2ecc71', text: 'SAFE' }
+    { id: 'p1', shape: 'square', color: '#e74c3c', text: 'START', tag: 'Markers' },
+    { id: 'p2', shape: 'square', color: '#f1c40f', text: '?', tag: 'Interactables' },
+    { id: 'p3', shape: 'circle', color: '#3498db', text: '1', tag: 'Path' },
+    { id: 'p4', shape: 'circle', color: '#2ecc71', text: 'SAFE', tag: 'Path' }
 ];
 
 class State {
@@ -174,10 +174,21 @@ class State {
 
     addPaletteItem(item) {
         const id = 'p' + Date.now();
-        this.activeProject.palette.push({ ...item, id });
+        // Ensure tag exists
+        const newItem = { tag: 'General', ...item, id };
+        this.activeProject.palette.push(newItem);
         this.selectPaletteItem(id);
         // notify called by selectPaletteItem
         return id;
+    }
+
+    updatePaletteItem(id, updates) {
+        const index = this.activeProject.palette.findIndex(p => p.id === id);
+        if (index > -1) {
+            this.activeProject.palette[index] = { ...this.activeProject.palette[index], ...updates };
+            // If the currently selected item is updated, we might need to refresh UI heavily, notify handles this.
+            this.notify();
+        }
     }
 
     selectPaletteItem(id) {

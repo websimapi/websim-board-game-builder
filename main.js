@@ -4,8 +4,10 @@ import { generatePrintLayout } from './print.js';
 
 // Elements
 const paletteList = document.getElementById('palette-list');
+const tagFiltersEl = document.getElementById('tag-filters');
 const designerPanel = document.getElementById('designer-panel');
 const btnNewPiece = document.getElementById('new-piece-btn');
+const btnEditPiece = document.getElementById('edit-piece-btn');
 const btnCloseDesigner = document.getElementById('close-designer');
 const btnAddPiece = document.getElementById('add-piece-btn');
 const btnPrint = document.getElementById('btn-print');
@@ -28,8 +30,12 @@ const btnGenerateTexture = document.getElementById('btn-generate-texture');
 const texturePreviewArea = document.getElementById('texture-preview-area');
 const textureLoading = document.getElementById('texture-loading');
 const inpText = document.getElementById('piece-text');
+const inpTag = document.getElementById('piece-tag');
+const dataListTags = document.getElementById('existing-tags');
 
 let currentGeneratedTextureUrl = null;
+let currentTagFilter = 'All';
+let editingPieceId = null;
 
 // Init
 function init() {
@@ -37,9 +43,17 @@ function init() {
     renderPalette();
 
     // Event Listeners
-    appState.subscribe(renderPalette);
+    appState.subscribe(() => {
+        renderPalette();
+        updateDataList();
+    });
 
-    btnNewPiece.addEventListener('click', openDesigner);
+    btnNewPiece.addEventListener('click', () => openDesigner(null));
+    btnEditPiece.addEventListener('click', () => {
+        const piece = appState.getSelectedPiece();
+        if (piece) openDesigner(piece);
+    });
+
     btnCloseDesigner.addEventListener('click', closeDesigner);
     
     // Toggle background type
@@ -89,16 +103,34 @@ function init() {
         const shape = Array.from(inpShapeRadios).find(r => r.checked).value;
         const bgType = Array.from(inpBgTypeRadios).find(r => r.checked).value;
         const text = inpText.value.trim();
+        const tag = inpTag.value.trim() || 'General';
         
         let color = inpColor.value;
         let textureUrl = null;
 
-        if (bgType === 'texture' && currentGeneratedTextureUrl) {
-            textureUrl = currentGeneratedTextureUrl;
-            color = '#ffffff'; // Fallback/Base color
+        if (bgType === 'texture') {
+            // Keep existing texture if editing and no new one generated
+            if (currentGeneratedTextureUrl) {
+                textureUrl = currentGeneratedTextureUrl;
+                color = '#ffffff';
+            } else if (editingPieceId) {
+                // If editing, preserve old texture url if we didn't generate a new one but are still in texture mode
+                const oldPiece = appState.palette.find(p => p.id === editingPieceId);
+                if (oldPiece && oldPiece.textureUrl) {
+                    textureUrl = oldPiece.textureUrl;
+                    color = '#ffffff';
+                }
+            }
         }
 
-        appState.addPaletteItem({ shape, color, text, textureUrl });
+        const pieceData = { shape, color, text, textureUrl, tag };
+
+        if (editingPieceId) {
+            appState.updatePaletteItem(editingPieceId, pieceData);
+        } else {
+            appState.addPaletteItem(pieceData);
+        }
+        
         closeDesigner();
     });
 
@@ -192,10 +224,14 @@ function renderProjectsList() {
 }
 
 function renderPalette() {
+    renderTags();
+
     // Clear list
     paletteList.innerHTML = '';
 
-    appState.palette.forEach(piece => {
+    const pieces = appState.palette.filter(p => currentTagFilter === 'All' || p.tag === currentTagFilter);
+
+    pieces.forEach(piece => {
         const btn = document.createElement('button');
         btn.className = `palette-item ${piece.id === appState.selectedPaletteId ? 'selected' : ''}`;
         
@@ -223,9 +259,101 @@ function renderPalette() {
 
         paletteList.appendChild(btn);
     });
+
+    // Update state of edit button
+    const selected = appState.getSelectedPiece();
+    if (selected) {
+        btnEditPiece.removeAttribute('disabled');
+        btnEditPiece.style.opacity = '1';
+    } else {
+        btnEditPiece.setAttribute('disabled', 'true');
+        btnEditPiece.style.opacity = '0.5';
+    }
 }
 
-function openDesigner() {
+function renderTags() {
+    tagFiltersEl.innerHTML = '';
+    
+    // Collect unique tags
+    const tags = new Set(['All']);
+    appState.palette.forEach(p => tags.add(p.tag || 'General'));
+    
+    Array.from(tags).sort().forEach(tag => {
+        const chip = document.createElement('button');
+        chip.className = `tag-chip ${currentTagFilter === tag ? 'active' : ''}`;
+        chip.textContent = tag;
+        chip.addEventListener('click', () => {
+            currentTagFilter = tag;
+            renderPalette();
+        });
+        tagFiltersEl.appendChild(chip);
+    });
+}
+
+function updateDataList() {
+    dataListTags.innerHTML = '';
+    const tags = new Set();
+    appState.palette.forEach(p => tags.add(p.tag || 'General'));
+    tags.forEach(tag => {
+        const opt = document.createElement('option');
+        opt.value = tag;
+        dataListTags.appendChild(opt);
+    });
+}
+
+function openDesigner(pieceToEdit = null) {
+    if (pieceToEdit) {
+        editingPieceId = pieceToEdit.id;
+        document.querySelector('#designer-panel h2').textContent = 'Edit Piece';
+        btnAddPiece.textContent = 'Save Changes';
+        
+        // Fill fields
+        inpText.value = pieceToEdit.text || '';
+        inpTag.value = pieceToEdit.tag || 'General';
+        inpColor.value = pieceToEdit.color || '#3498db';
+        
+        // Shape
+        Array.from(inpShapeRadios).forEach(r => {
+            r.checked = (r.value === pieceToEdit.shape);
+        });
+
+        // Texture vs Color
+        const hasTexture = !!pieceToEdit.textureUrl;
+        Array.from(inpBgTypeRadios).forEach(r => {
+            r.checked = (r.value === (hasTexture ? 'texture' : 'color'));
+        });
+        
+        // Trigger UI toggle
+        if (hasTexture) {
+            sectionColor.style.display = 'none';
+            sectionTexture.style.display = 'block';
+            texturePreviewArea.innerHTML = `<img src="${pieceToEdit.textureUrl}" alt="Preview">`;
+            currentGeneratedTextureUrl = null; // We aren't generating a new one yet, but we will use the old one if null
+        } else {
+            sectionColor.style.display = 'block';
+            sectionTexture.style.display = 'none';
+            texturePreviewArea.innerHTML = '<div class="placeholder">No texture generated</div>';
+            currentGeneratedTextureUrl = null;
+        }
+
+    } else {
+        editingPieceId = null;
+        document.querySelector('#designer-panel h2').textContent = 'New Piece';
+        btnAddPiece.textContent = 'Add to Palette';
+        
+        // Reset fields
+        inpText.value = '';
+        inpTag.value = '';
+        inpColor.value = '#3498db';
+        inpShapeRadios[0].checked = true; // Square
+        inpBgTypeRadios[0].checked = true; // Color
+        
+        sectionColor.style.display = 'block';
+        sectionTexture.style.display = 'none';
+        texturePreviewArea.innerHTML = '<div class="placeholder">No texture generated</div>';
+        currentGeneratedTextureUrl = null;
+    }
+
     designerPanel.classList.add('open');
 }
 
