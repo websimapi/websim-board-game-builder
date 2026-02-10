@@ -64,6 +64,7 @@ class State {
                     palette: p.palette,
                     selectedPaletteId: p.selectedPaletteId,
                     grid: Array.from(p.grid.entries()), // Serialize Map to Array
+                    rules: p.rules,
                     lastModified: p.lastModified
                 }))
             };
@@ -112,6 +113,7 @@ class State {
             palette: JSON.parse(JSON.stringify(defaultPalette)),
             grid: new Map(),
             selectedPaletteId: 'p1',
+            rules: `# ${name}\n\n## Objective\nReach the finish line first!\n\n## How to Play\n1. Roll the dice.\n2. Move your piece.\n3. Follow the instructions on the tile.`,
             lastModified: Date.now()
         };
 
@@ -146,6 +148,7 @@ class State {
                 name: p.name + ' (Copy)',
                 palette: JSON.parse(JSON.stringify(p.palette)),
                 grid: new Map(p.grid),
+                rules: p.rules,
                 lastModified: Date.now()
             };
             this.projects.push(clone);
@@ -178,6 +181,12 @@ class State {
             p.lastModified = Date.now();
             this.notify();
         }
+    }
+
+    updateRules(newRules) {
+        this.activeProject.rules = newRules;
+        this.activeProject.lastModified = Date.now();
+        this.notify();
     }
 
     // --- Content Management (Proxied) ---

@@ -1,4 +1,5 @@
 import { appState } from './state.js';
+import { marked } from 'marked';
 
 export function setupPrintView() {
     // No specific setup needed on load
@@ -60,6 +61,26 @@ export function generatePrintLayout() {
     
     coverPage.innerHTML = statsHtml;
     statsContainer.appendChild(coverPage);
+
+    // 2b. Render Rules Page
+    if (appState.activeProject.rules) {
+        const rulesPage = document.createElement('div');
+        rulesPage.className = 'print-page';
+        rulesPage.style.alignItems = 'flex-start'; 
+        rulesPage.style.justifyContent = 'flex-start';
+        rulesPage.style.padding = '2cm';
+        rulesPage.style.boxSizing = 'border-box';
+        rulesPage.style.overflow = 'hidden'; // Don't let long rules break page structure
+
+        const rulesContent = document.createElement('div');
+        rulesContent.className = 'rules-content';
+        rulesContent.style.fontSize = '12pt';
+        // Use marked to render rules
+        rulesContent.innerHTML = marked.parse(appState.activeProject.rules);
+        
+        rulesPage.appendChild(rulesContent);
+        statsContainer.appendChild(rulesPage);
+    }
 
     // 3. Render Tiles
     // Iterate through grid to print them in order? Or grouped?

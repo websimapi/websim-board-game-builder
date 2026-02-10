@@ -9,7 +9,8 @@
         {
             "imports": {
                 "three": "https://esm.sh/three@0.160.0",
-                "three/addons/": "https://esm.sh/three@0.160.0/examples/jsm/"
+                "three/addons/": "https://esm.sh/three@0.160.0/examples/jsm/",
+                "marked": "https://esm.sh/marked@11.1.1"
             }
         }
     </script>
@@ -29,6 +30,10 @@
                 <button id="btn-projects" class="action-btn" aria-label="Projects">
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path></svg>
                     <span>My Boards</span>
+                </button>
+                <button id="btn-rules" class="action-btn" aria-label="Rules">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
+                    <span>Rules</span>
                 </button>
                 <button id="btn-print" class="action-btn" aria-label="Print">
                     <img src="asset_icon_print.png" alt="Print">
@@ -131,6 +136,29 @@
 
     </div>
 
+    <!-- Rules Modal -->
+    <div id="rules-modal" class="modal-overlay">
+        <div class="modal-content" style="height: 80vh;">
+            <div class="modal-header">
+                <h2>Game Rules</h2>
+                <div style="display: flex; gap: 10px;">
+                    <button id="btn-toggle-edit-rules" class="secondary-btn">Edit</button>
+                    <button id="close-rules" class="close-btn">×</button>
+                </div>
+            </div>
+            <div class="modal-body" style="padding: 0;">
+                <div id="rules-view" class="rules-content markdown-body" style="padding: 20px;">
+                    <!-- Rendered Markdown -->
+                </div>
+                <textarea id="rules-editor" class="rules-editor" style="display: none;" placeholder="# Game Title\n\nWrite your rules here..."></textarea>
+            </div>
+            <div class="modal-footer">
+                <button id="btn-save-rules" class="primary-btn" style="display: none;">Save Rules</button>
+                <button id="btn-close-rules-footer" class="primary-btn">Close</button>
+            </div>
+        </div>
+    </div>
+
     <!-- Projects Modal -->
     <div id="projects-modal" class="modal-overlay">
         <div class="modal-content">
@@ -179,6 +207,9 @@
                         <span class="step-icon">🗺️</span> Designing Layout...
                     </div>
                     <div class="ai-step" id="ai-step-3">
+                        <span class="step-icon">📜</span> Writing Rules...
+                    </div>
+                    <div class="ai-step" id="ai-step-4">
                         <span class="step-icon">✨</span> Finalizing...
                     </div>
                 </div>

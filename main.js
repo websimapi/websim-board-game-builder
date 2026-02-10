@@ -1,6 +1,7 @@
 import { initScene } from './scene.js';
 import { appState } from './state.js';
 import { generatePrintLayout } from './print.js';
+import { marked } from 'marked';
 
 // Elements
 const paletteList = document.getElementById('palette-list');
@@ -11,6 +12,16 @@ const btnEditPiece = document.getElementById('edit-piece-btn');
 const btnCloseDesigner = document.getElementById('close-designer');
 const btnAddPiece = document.getElementById('add-piece-btn');
 const btnPrint = document.getElementById('btn-print');
+const btnRules = document.getElementById('btn-rules');
+
+// Rules Modal Elements
+const rulesModal = document.getElementById('rules-modal');
+const btnCloseRules = document.getElementById('close-rules');
+const btnCloseRulesFooter = document.getElementById('btn-close-rules-footer');
+const btnToggleEditRules = document.getElementById('btn-toggle-edit-rules');
+const btnSaveRules = document.getElementById('btn-save-rules');
+const rulesView = document.getElementById('rules-view');
+const rulesEditor = document.getElementById('rules-editor');
 
 // Project Manager Elements
 const btnProjects = document.getElementById('btn-projects');
@@ -30,7 +41,8 @@ const aiStatusContainer = document.getElementById('ai-status-container');
 const aiSteps = [
     document.getElementById('ai-step-1'),
     document.getElementById('ai-step-2'),
-    document.getElementById('ai-step-3')
+    document.getElementById('ai-step-3'),
+    document.getElementById('ai-step-4')
 ];
 
 // Designer Inputs
@@ -151,6 +163,40 @@ function init() {
     btnPrint.addEventListener('click', () => {
         generatePrintLayout();
         window.print();
+    });
+
+    // Rules Listeners
+    btnRules.addEventListener('click', openRulesModal);
+    btnCloseRules.addEventListener('click', closeRulesModal);
+    btnCloseRulesFooter.addEventListener('click', closeRulesModal);
+    
+    btnToggleEditRules.addEventListener('click', () => {
+        const isEditing = rulesEditor.style.display === 'block';
+        if (isEditing) {
+            // Switch to View
+            rulesEditor.style.display = 'none';
+            rulesView.style.display = 'block';
+            btnSaveRules.style.display = 'none';
+            btnToggleEditRules.textContent = 'Edit';
+            btnCloseRulesFooter.style.display = 'block';
+            // Save logic
+            appState.updateRules(rulesEditor.value);
+            rulesView.innerHTML = marked.parse(rulesEditor.value);
+        } else {
+            // Switch to Edit
+            rulesView.style.display = 'none';
+            rulesEditor.style.display = 'block';
+            btnSaveRules.style.display = 'block';
+            btnToggleEditRules.textContent = 'Preview';
+            btnCloseRulesFooter.style.display = 'none';
+            rulesEditor.value = appState.activeProject.rules || '';
+        }
+    });
+
+    btnSaveRules.addEventListener('click', () => {
+        appState.updateRules(rulesEditor.value);
+        // Switch back to view
+        btnToggleEditRules.click();
     });
 
     // Project Manager Listeners
@@ -302,8 +348,35 @@ async function runAiGeneration(theme, complexity) {
 
     updateStep(1, 'done');
 
-    // --- STEP 3: Finalize ---
+    // --- STEP 3: Write Rules ---
     updateStep(2, 'active');
+
+    const rulesPrompt = `
+    Write a short, fun set of rules (in Markdown format) for a board game called "${theme}".
+    The board has these special spaces:
+    ${JSON.stringify(paletteWithIds.filter(p => p.tag !== 'Path').map(p => p.text + " (" + p.tag + ")"))}
+
+    Structure:
+    # ${theme}
+    ## Objective
+    ## Setup
+    ## How to Play
+    - Movement (Dice roll)
+    - What happens on special spaces
+
+    Keep it simple and playable.
+    `;
+
+    const rulesRes = await websim.chat.completions.create({
+        messages: [{ role: "user", content: rulesPrompt }]
+    });
+
+    const rulesText = rulesRes.content;
+
+    updateStep(2, 'done');
+
+    // --- STEP 4: Finalize ---
+    updateStep(3, 'active');
 
     // Construct Project Object
     const project = {
@@ -312,6 +385,7 @@ async function runAiGeneration(theme, complexity) {
         palette: paletteWithIds,
         grid: new Map(),
         selectedPaletteId: startTile.id,
+        rules: rulesText,
         lastModified: Date.now()
     };
 
@@ -325,10 +399,30 @@ async function runAiGeneration(theme, complexity) {
     // Save to state
     appState.addProject(project);
 
-    updateStep(2, 'done');
+    updateStep(3, 'done');
     
     // Short delay to see completion
     await new Promise(r => setTimeout(r, 800));
+}
+
+function openRulesModal() {
+    // Populate current rules
+    const rules = appState.activeProject.rules || '# New Game\n\nNo rules yet.';
+    rulesEditor.value = rules;
+    rulesView.innerHTML = marked.parse(rules);
+    
+    // Default to view mode
+    rulesEditor.style.display = 'none';
+    rulesView.style.display = 'block';
+    btnSaveRules.style.display = 'none';
+    btnCloseRulesFooter.style.display = 'block';
+    btnToggleEditRules.textContent = 'Edit';
+
+    rulesModal.classList.add('open');
+}
+
+function closeRulesModal() {
+    rulesModal.classList.remove('open');
 }
 
 function openProjectsModal() {
