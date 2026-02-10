@@ -19,6 +19,20 @@ const btnCloseProjects = document.getElementById('close-projects');
 const btnCreateProject = document.getElementById('btn-create-project');
 const projectsListEl = document.getElementById('projects-list');
 
+// AI Modal Elements
+const aiModal = document.getElementById('ai-modal');
+const btnAiModalOpen = document.getElementById('btn-ai-modal-open');
+const btnCloseAi = document.getElementById('close-ai');
+const btnGenerateAi = document.getElementById('btn-generate-ai');
+const inpAiPrompt = document.getElementById('ai-prompt');
+const inpAiComplexity = document.getElementById('ai-complexity');
+const aiStatusContainer = document.getElementById('ai-status-container');
+const aiSteps = [
+    document.getElementById('ai-step-1'),
+    document.getElementById('ai-step-2'),
+    document.getElementById('ai-step-3')
+];
+
 // Designer Inputs
 const inpShapeRadios = document.getElementsByName('shape');
 const inpBgTypeRadios = document.getElementsByName('bg-type');
@@ -147,8 +161,174 @@ function init() {
         if(name) {
             appState.createProject(name);
             renderProjectsList(); // Refresh list
+            closeProjectsModal();
         }
     });
+
+    // AI Generators
+    btnAiModalOpen.addEventListener('click', () => {
+        closeProjectsModal();
+        aiModal.classList.add('open');
+        // Reset UI
+        inpAiPrompt.value = '';
+        aiStatusContainer.style.display = 'none';
+        btnGenerateAi.disabled = false;
+        btnGenerateAi.textContent = 'Generate Board';
+        aiSteps.forEach(s => s.className = 'ai-step');
+    });
+
+    btnCloseAi.addEventListener('click', () => {
+        aiModal.classList.remove('open');
+    });
+
+    btnGenerateAi.addEventListener('click', async () => {
+        const prompt = inpAiPrompt.value.trim();
+        const complexity = inpAiComplexity.value;
+        
+        if (!prompt) {
+            alert("Please enter a theme or description!");
+            return;
+        }
+
+        // Start Process
+        btnGenerateAi.disabled = true;
+        btnGenerateAi.textContent = 'Dreaming up board...';
+        aiStatusContainer.style.display = 'flex';
+        
+        try {
+            await runAiGeneration(prompt, complexity);
+            aiModal.classList.remove('open');
+        } catch (err) {
+            console.error(err);
+            alert("AI Generation failed. Please try again.");
+            btnGenerateAi.disabled = false;
+            btnGenerateAi.textContent = 'Generate Board';
+        }
+    });
+}
+
+async function runAiGeneration(theme, complexity) {
+    const updateStep = (index, status) => {
+        if (status === 'active') {
+            aiSteps[index].classList.add('active');
+            aiSteps[index].classList.remove('done');
+        } else if (status === 'done') {
+            aiSteps[index].classList.remove('active');
+            aiSteps[index].classList.add('done');
+        }
+    };
+
+    // --- STEP 1: Generate Palette ---
+    updateStep(0, 'active');
+    
+    const palettePrompt = `
+    Create a set of board game tiles for a "${theme}" themed game.
+    
+    Constraints:
+    1. Must include exactly 1 "Start" tile.
+    2. Must include exactly 1 "Finish" tile.
+    3. Include 4-8 other types of tiles (e.g. basic path, special event, hazard, bonus).
+    4. "shape" must be "square" or "circle".
+    5. "color" should be a hex code suitable for the theme.
+    6. "text" is the label on the tile (max 8 chars).
+    7. "tag" categorizes the tile (e.g. Start, End, Path, Hazard, Bonus).
+    
+    Respond with JSON only:
+    {
+        "tiles": [
+            { "text": "Start", "color": "#hex", "shape": "square", "tag": "Start" },
+            ...
+        ]
+    }`;
+
+    const paletteRes = await websim.chat.completions.create({
+        messages: [{ role: "user", content: palettePrompt }],
+        json: true
+    });
+
+    const paletteData = JSON.parse(paletteRes.content).tiles;
+    
+    // Assign IDs to palette items
+    const paletteWithIds = paletteData.map((p, i) => ({
+        ...p,
+        id: `gen_p_${Date.now()}_${i}`
+    }));
+
+    updateStep(0, 'done');
+
+    // --- STEP 2: Generate Layout ---
+    updateStep(1, 'active');
+
+    const sizeMap = {
+        small: { tiles: 15, size: "10x10" },
+        medium: { tiles: 30, size: "15x15" },
+        large: { tiles: 50, size: "20x20" }
+    };
+    const specs = sizeMap[complexity];
+
+    // Find critical IDs
+    const startTile = paletteWithIds.find(p => p.tag === 'Start') || paletteWithIds[0];
+    const finishTile = paletteWithIds.find(p => p.tag === 'Finish') || paletteWithIds[paletteWithIds.length - 1];
+    
+    const gridPrompt = `
+    Generate a 2D grid layout for a board game using these available tiles:
+    ${JSON.stringify(paletteWithIds.map(p => ({ id: p.id, tag: p.tag, text: p.text })))}
+
+    Goal: Create a playable path from Start to Finish.
+    Target Length: Approx ${specs.tiles} tiles.
+    Boundaries: Keep within ${specs.size} coordinate system (x, z).
+
+    Rules:
+    1. Place exactly one "${startTile.id}" (Start).
+    2. Place exactly one "${finishTile.id}" (Finish).
+    3. Connect them with a winding, interesting path of other tiles.
+    4. Ensure the path is continuous (tiles are adjacent horizontally or vertically).
+    5. Coordinates x, z must be integers.
+
+    Respond with JSON only:
+    {
+        "layout": [
+            { "x": 0, "z": 0, "tileId": "${startTile.id}" },
+            ...
+        ]
+    }`;
+
+    const gridRes = await websim.chat.completions.create({
+        messages: [{ role: "user", content: gridPrompt }],
+        json: true
+    });
+
+    const layoutData = JSON.parse(gridRes.content).layout;
+
+    updateStep(1, 'done');
+
+    // --- STEP 3: Finalize ---
+    updateStep(2, 'active');
+
+    // Construct Project Object
+    const project = {
+        id: 'proj_ai_' + Date.now(),
+        name: `${theme} (${complexity})`,
+        palette: paletteWithIds,
+        grid: new Map(),
+        selectedPaletteId: startTile.id,
+        lastModified: Date.now()
+    };
+
+    // Convert layout array to Map
+    layoutData.forEach(item => {
+        if (item.tileId && item.x != null && item.z != null) {
+            project.grid.set(`${item.x},${item.z}`, item.tileId);
+        }
+    });
+
+    // Save to state
+    appState.addProject(project);
+
+    updateStep(2, 'done');
+    
+    // Short delay to see completion
+    await new Promise(r => setTimeout(r, 800));
 }
 
 function openProjectsModal() {

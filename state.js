@@ -94,6 +94,16 @@ class State {
 
     // --- Project Management ---
 
+    addProject(projectData) {
+        // Ensure data integrity
+        if (!projectData.id) projectData.id = 'proj_' + Date.now();
+        if (!projectData.lastModified) projectData.lastModified = Date.now();
+        
+        this.projects.push(projectData);
+        this.activeProjectId = projectData.id;
+        this.notify();
+    }
+
     createProject(name = 'New Board', isDefault = false) {
         const id = 'proj_' + Date.now() + Math.floor(Math.random() * 1000);
         const project = {

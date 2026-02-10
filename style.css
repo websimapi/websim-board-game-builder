@@ -556,6 +556,34 @@ input[type="text"]:focus {
     background: #fef2f2;
 }
 
+/* AI Modal Steps */
+.ai-step {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px;
+    background: #f8fafc;
+    border-radius: 8px;
+    color: #64748b;
+    font-weight: 500;
+    border: 1px solid transparent;
+    transition: all 0.3s;
+}
+.ai-step.active {
+    background: #eff6ff;
+    color: #2563eb;
+    border-color: #bfdbfe;
+    box-shadow: 0 2px 4px rgba(37, 99, 235, 0.1);
+}
+.ai-step.done {
+    background: #f0fdf4;
+    color: #16a34a;
+    border-color: #bbf7d0;
+}
+.ai-step .step-icon {
+    font-size: 1.2rem;
+}
+
 /* Print Styles */
 #print-container {
     display: none;

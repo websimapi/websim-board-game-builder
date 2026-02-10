@@ -143,8 +143,48 @@
                     <!-- Project items injected here -->
                 </div>
             </div>
-            <div class="modal-footer">
+            <div class="modal-footer" style="display: flex; flex-direction: column; gap: 10px;">
                 <button id="btn-create-project" class="primary-btn">Create New Board</button>
+                <button id="btn-ai-modal-open" class="secondary-btn" style="width: 100%; text-align: center; justify-content: center;">✨ Create with AI</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- AI Generator Modal -->
+    <div id="ai-modal" class="modal-overlay">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>AI Board Architect</h2>
+                <button id="close-ai" class="close-btn">×</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label>Game Theme & Idea</label>
+                    <input type="text" id="ai-prompt" placeholder="e.g. Haunted House, Pirate Island, Candy World...">
+                </div>
+                <div class="form-group">
+                    <label>Board Size / Difficulty</label>
+                    <select id="ai-complexity" style="width: 100%; padding: 12px; border-radius: 12px; border: 2px solid #e2e8f0; font-size: 1rem;">
+                        <option value="small">Easy / Small (Start to Finish ~15 tiles)</option>
+                        <option value="medium" selected>Medium (Standard ~30 tiles)</option>
+                        <option value="large">Hard / Epic (~50+ tiles)</option>
+                    </select>
+                </div>
+                
+                <div id="ai-status-container" style="display: none; flex-direction: column; gap: 10px; margin-top: 20px;">
+                    <div class="ai-step" id="ai-step-1">
+                        <span class="step-icon">🎲</span> Generating Game Pieces...
+                    </div>
+                    <div class="ai-step" id="ai-step-2">
+                        <span class="step-icon">🗺️</span> Designing Layout...
+                    </div>
+                    <div class="ai-step" id="ai-step-3">
+                        <span class="step-icon">✨</span> Finalizing...
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button id="btn-generate-ai" class="primary-btn" style="background: linear-gradient(135deg, #6366f1 0%, #a855f7 100%);">Generate Board</button>
             </div>
         </div>
     </div>
