@@ -154,48 +154,100 @@ function onCanvasClick() {
 
 // Generate a texture for a piece with text
 function getTexture(piece) {
-    const key = piece.id + '_' + piece.color + '_' + piece.text + '_' + piece.shape;
+    // Cache key must include textureUrl existence
+    const hasTexture = !!piece.textureUrl;
+    const key = piece.id + '_' + piece.color + '_' + piece.text + '_' + piece.shape + '_' + (hasTexture ? 'tex' : 'no');
+    
     if (textureCache.has(key)) return textureCache.get(key);
 
     const canvas = document.createElement('canvas');
     canvas.width = 256;
     canvas.height = 256;
     const ctx = canvas.getContext('2d');
-
-    // Background
-    ctx.fillStyle = piece.color;
-    ctx.fillRect(0, 0, 256, 256);
-
-    // Border (internal visual aid)
-    ctx.strokeStyle = 'rgba(0,0,0,0.2)';
-    ctx.lineWidth = 10;
-    if (piece.shape === 'circle') {
-        ctx.beginPath();
-        ctx.arc(128, 128, 120, 0, Math.PI*2);
-        ctx.stroke();
-    } else {
-        ctx.strokeRect(5, 5, 246, 246);
-    }
-
-    // Text
-    if (piece.text) {
-        ctx.fillStyle = 'rgba(255,255,255,0.9)';
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'middle';
-        
-        // Dynamic font size
-        const fontSize = piece.text.length > 3 ? 40 : 80;
-        ctx.font = `bold ${fontSize}px Arial`;
-        
-        // Shadow for text readability
-        ctx.shadowColor = "rgba(0,0,0,0.5)";
-        ctx.shadowBlur = 4;
-        
-        ctx.fillText(piece.text, 128, 128);
-    }
-
+    
     const tex = new THREE.CanvasTexture(canvas);
     textureCache.set(key, tex);
+
+    // Drawing function to handle async image loading
+    const draw = (img = null) => {
+        // Clear
+        ctx.clearRect(0, 0, 256, 256);
+
+        // Clip for Circle shape if needed
+        if (piece.shape === 'circle') {
+            ctx.save();
+            ctx.beginPath();
+            ctx.arc(128, 128, 128, 0, Math.PI*2);
+            ctx.clip();
+        }
+
+        // Background
+        if (img) {
+            ctx.drawImage(img, 0, 0, 256, 256);
+        } else {
+            ctx.fillStyle = piece.color;
+            ctx.fillRect(0, 0, 256, 256);
+        }
+
+        // Restore if we clipped
+        if (piece.shape === 'circle') {
+            ctx.restore();
+        }
+
+        // Border (internal visual aid)
+        ctx.strokeStyle = 'rgba(0,0,0,0.2)';
+        ctx.lineWidth = 10;
+        if (piece.shape === 'circle') {
+            ctx.beginPath();
+            ctx.arc(128, 128, 120, 0, Math.PI*2);
+            ctx.stroke();
+        } else {
+            ctx.strokeRect(5, 5, 246, 246);
+        }
+
+        // Text
+        if (piece.text) {
+            // If texture present, add a background to text for readability
+            if (img) {
+                ctx.fillStyle = 'rgba(0,0,0,0.5)';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                const fontSize = piece.text.length > 3 ? 40 : 80;
+                ctx.font = `bold ${fontSize}px Arial`;
+                // Approximate text background
+                // ctx.fillRect(..., ...); // complex to calculate exact rect, shadow is easier
+            }
+
+            ctx.fillStyle = 'rgba(255,255,255,1.0)';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            
+            // Dynamic font size
+            const fontSize = piece.text.length > 3 ? 40 : 80;
+            ctx.font = `bold ${fontSize}px Arial`;
+            
+            // Heavy Shadow for text readability over texture
+            ctx.shadowColor = "rgba(0,0,0,0.8)";
+            ctx.shadowBlur = 6;
+            ctx.lineWidth = 4;
+            ctx.strokeStyle = 'rgba(0,0,0,0.8)';
+            ctx.strokeText(piece.text, 128, 128); // Outline
+            ctx.fillText(piece.text, 128, 128);
+        }
+        
+        tex.needsUpdate = true;
+    };
+
+    if (piece.textureUrl) {
+        const img = new Image();
+        img.crossOrigin = "Anonymous";
+        img.onload = () => draw(img);
+        img.src = piece.textureUrl;
+        draw(); // Draw placeholder first
+    } else {
+        draw();
+    }
+
     return tex;
 }
 

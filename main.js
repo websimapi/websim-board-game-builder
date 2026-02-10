@@ -19,8 +19,17 @@ const projectsListEl = document.getElementById('projects-list');
 
 // Designer Inputs
 const inpShapeRadios = document.getElementsByName('shape');
+const inpBgTypeRadios = document.getElementsByName('bg-type');
+const sectionColor = document.getElementById('section-color');
+const sectionTexture = document.getElementById('section-texture');
 const inpColor = document.getElementById('piece-color');
+const inpTexturePrompt = document.getElementById('texture-prompt');
+const btnGenerateTexture = document.getElementById('btn-generate-texture');
+const texturePreviewArea = document.getElementById('texture-preview-area');
+const textureLoading = document.getElementById('texture-loading');
 const inpText = document.getElementById('piece-text');
+
+let currentGeneratedTextureUrl = null;
 
 // Init
 function init() {
@@ -33,12 +42,63 @@ function init() {
     btnNewPiece.addEventListener('click', openDesigner);
     btnCloseDesigner.addEventListener('click', closeDesigner);
     
+    // Toggle background type
+    Array.from(inpBgTypeRadios).forEach(r => {
+        r.addEventListener('change', (e) => {
+            if (e.target.value === 'color') {
+                sectionColor.style.display = 'block';
+                sectionTexture.style.display = 'none';
+            } else {
+                sectionColor.style.display = 'none';
+                sectionTexture.style.display = 'block';
+            }
+        });
+    });
+
+    // Generate Texture
+    btnGenerateTexture.addEventListener('click', async () => {
+        const prompt = inpTexturePrompt.value.trim();
+        if (!prompt) return;
+
+        textureLoading.style.display = 'flex';
+        texturePreviewArea.innerHTML = '';
+        btnGenerateTexture.disabled = true;
+
+        try {
+            const result = await websim.imageGen({
+                prompt: prompt + ", texture, pattern, top down view, flat lighting, game asset",
+                aspect_ratio: "1:1"
+            });
+            
+            // Convert to Data URL for persistence
+            const dataUrl = await urlToDataUrl(result.url);
+            currentGeneratedTextureUrl = dataUrl;
+
+            // Show Preview
+            texturePreviewArea.innerHTML = `<img src="${currentGeneratedTextureUrl}" alt="Texture Preview">`;
+        } catch (err) {
+            console.error(err);
+            texturePreviewArea.innerHTML = `<span style="color:red">Error generating</span>`;
+        } finally {
+            textureLoading.style.display = 'none';
+            btnGenerateTexture.disabled = false;
+        }
+    });
+
     btnAddPiece.addEventListener('click', () => {
         const shape = Array.from(inpShapeRadios).find(r => r.checked).value;
-        const color = inpColor.value;
+        const bgType = Array.from(inpBgTypeRadios).find(r => r.checked).value;
         const text = inpText.value.trim();
+        
+        let color = inpColor.value;
+        let textureUrl = null;
 
-        appState.addPaletteItem({ shape, color, text });
+        if (bgType === 'texture' && currentGeneratedTextureUrl) {
+            textureUrl = currentGeneratedTextureUrl;
+            color = '#ffffff'; // Fallback/Base color
+        }
+
+        appState.addPaletteItem({ shape, color, text, textureUrl });
         closeDesigner();
     });
 
@@ -138,11 +198,17 @@ function renderPalette() {
     appState.palette.forEach(piece => {
         const btn = document.createElement('button');
         btn.className = `palette-item ${piece.id === appState.selectedPaletteId ? 'selected' : ''}`;
-        btn.style.backgroundColor = piece.color;
         
-        // Determine text color
-        const isDark = checkIsDark(piece.color);
-        btn.style.color = isDark ? 'white' : 'black';
+        if (piece.textureUrl) {
+            btn.style.backgroundImage = `url('${piece.textureUrl}')`;
+            btn.style.backgroundSize = 'cover';
+            btn.style.color = 'white';
+            btn.style.textShadow = '0 0 3px black';
+        } else {
+            btn.style.backgroundColor = piece.color;
+            const isDark = checkIsDark(piece.color);
+            btn.style.color = isDark ? 'white' : 'black';
+        }
         
         btn.innerHTML = `<span>${piece.text || ''}</span>`;
         
@@ -165,6 +231,21 @@ function openDesigner() {
 
 function closeDesigner() {
     designerPanel.classList.remove('open');
+    // Reset state
+    currentGeneratedTextureUrl = null;
+    texturePreviewArea.innerHTML = '<div class="placeholder">No texture generated</div>';
+    inpTexturePrompt.value = '';
+}
+
+async function urlToDataUrl(url) {
+    const response = await fetch(url);
+    const blob = await response.blob();
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onloadend = () => resolve(reader.result);
+        reader.onerror = reject;
+        reader.readAsDataURL(blob);
+    });
 }
 
 function checkIsDark(colorHex) {

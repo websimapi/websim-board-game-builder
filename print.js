@@ -49,7 +49,11 @@ export function generatePrintLayout() {
     Object.keys(counts).forEach(pid => {
         const piece = appState.palette.find(p => p.id === pid);
         if(piece) {
-            statsHtml += `<li><strong>${counts[pid]}x</strong> ${piece.shape.toUpperCase()} <span style="display:inline-block; width:1em; height:1em; background:${piece.color}; border:1px solid #000; vertical-align:middle; margin:0 5px;"></span> ("${piece.text}")</li>`;
+            const swatchStyle = piece.textureUrl 
+                ? `background-image: url('${piece.textureUrl}'); background-size: cover;` 
+                : `background-color: ${piece.color};`;
+            
+            statsHtml += `<li><strong>${counts[pid]}x</strong> ${piece.shape.toUpperCase()} <span style="display:inline-block; width:1em; height:1em; ${swatchStyle} border:1px solid #000; vertical-align:middle; margin:0 5px;"></span> ("${piece.text}")</li>`;
         }
     });
     statsHtml += '</ul></div>';
@@ -75,9 +79,19 @@ export function generatePrintLayout() {
                 // Content
                 const inner = document.createElement('div');
                 inner.className = 'print-content';
-                inner.style.backgroundColor = piece.color;
-                // Determine text color based on brightness
-                inner.style.color = isDark(piece.color) ? 'white' : 'black';
+                
+                if (piece.textureUrl) {
+                    inner.style.backgroundImage = `url('${piece.textureUrl}')`;
+                    inner.style.backgroundSize = 'cover';
+                    inner.style.backgroundPosition = 'center';
+                    // Text needs to be readable over image
+                    inner.style.color = 'white';
+                    inner.style.textShadow = '0 0 10px #000, 0 0 20px #000';
+                } else {
+                    inner.style.backgroundColor = piece.color;
+                    inner.style.color = isDark(piece.color) ? 'white' : 'black';
+                }
+                
                 inner.innerText = piece.text;
                 
                 div.appendChild(inner);

@@ -74,8 +74,37 @@
                 </div>
 
                 <div class="form-group">
-                    <label>Color</label>
-                    <input type="color" id="piece-color" value="#3498db">
+                    <label>Background Style</label>
+                    <div class="toggle-group" style="margin-bottom: 12px;">
+                        <label class="radio-label">
+                            <input type="radio" name="bg-type" value="color" checked>
+                            <span class="box-shape">Color</span>
+                        </label>
+                        <label class="radio-label">
+                            <input type="radio" name="bg-type" value="texture">
+                            <span class="box-shape">AI Texture</span>
+                        </label>
+                    </div>
+
+                    <!-- Color Picker Section -->
+                    <div id="section-color">
+                        <input type="color" id="piece-color" value="#3498db">
+                    </div>
+
+                    <!-- Texture Generator Section -->
+                    <div id="section-texture" style="display: none;">
+                        <div class="texture-input-group">
+                            <input type="text" id="texture-prompt" placeholder="e.g. Grass, Stone wall, Lava...">
+                            <button id="btn-generate-texture" class="secondary-btn">Generate</button>
+                        </div>
+                        <div id="texture-preview-area">
+                            <!-- Preview image will go here -->
+                            <div class="placeholder">No texture generated</div>
+                        </div>
+                        <div id="texture-loading" style="display: none;">
+                            <div class="spinner"></div> Generating...
+                        </div>
+                    </div>
                 </div>
 
                 <div class="form-group">
