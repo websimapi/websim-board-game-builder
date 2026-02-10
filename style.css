@@ -316,34 +316,48 @@ input[type="text"]:focus {
 }
 
 @media print {
+    @page { margin: 0.5cm; }
     body * { visibility: hidden; }
     #print-container, #print-container * {
         visibility: visible;
     }
     #print-container {
-        display: block;
         position: absolute;
         left: 0;
         top: 0;
         width: 100%;
     }
-    
-    .print-piece {
-        display: inline-block;
-        margin: 10px;
-        page-break-inside: avoid;
+
+    .print-section-title {
+        display: none;
     }
+
+    .print-page {
+        width: 100vw;
+        height: 95vh;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        page-break-before: always;
+        break-before: page;
+    }
+    
     .print-piece.square {
-        width: 2.54cm; /* 1 inch approx */
-        height: 2.54cm;
-        border: 1px solid #ccc;
+        width: 18cm; 
+        height: 18cm;
+        border: 2px solid #333;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
     }
     .print-piece.circle {
-        width: 2.54cm;
-        height: 2.54cm;
+        width: 18cm;
+        height: 18cm;
         border-radius: 50%;
-        border: 1px solid #ccc;
+        border: 2px solid #333;
         overflow: hidden;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
     }
     .print-content {
         width: 100%;
@@ -352,7 +366,9 @@ input[type="text"]:focus {
         align-items: center;
         justify-content: center;
         font-weight: bold;
-        font-size: 14pt;
+        font-size: 6rem;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
     }
     
     .dice-face {
@@ -365,8 +381,7 @@ input[type="text"]:focus {
         font-size: 24pt; 
         position: relative;
         box-sizing: border-box;
-    }
-    .break-before {
-        page-break-before: always;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
     }
 }

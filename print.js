@@ -39,6 +39,9 @@ export function generatePrintLayout() {
         
         if (piece) {
             for(let i=0; i<count; i++) {
+                const page = document.createElement('div');
+                page.className = 'print-page';
+
                 const div = document.createElement('div');
                 div.className = `print-piece ${piece.shape}`;
                 
@@ -51,7 +54,8 @@ export function generatePrintLayout() {
                 inner.innerText = piece.text;
                 
                 div.appendChild(inner);
-                container.appendChild(div);
+                page.appendChild(div);
+                container.appendChild(page);
             }
         }
     });
@@ -59,8 +63,9 @@ export function generatePrintLayout() {
     // 4. Render Dice
     // Standard D6 template with folding tabs
     const diceHtml = `
-        <div style="display:flex; flex-direction: column; align-items: center; gap: 0;">
-            <!-- Row 1 -->
+        <div class="print-page">
+            <div style="display:flex; flex-direction: column; align-items: center; gap: 0;">
+                <!-- Row 1 -->
             <div style="display:flex;">
                  <div style="width: 4cm; height: 4cm;"></div>
                  <div class="dice-face" style="background: white;">1
@@ -93,8 +98,9 @@ export function generatePrintLayout() {
                  <div style="width: 4cm; height: 4cm;"></div>
                  <div style="width: 4cm; height: 4cm;"></div>
             </div>
+            <p style="text-align:center; font-style:italic;">Standard D6 Construction Net</p>
         </div>
-        <p style="text-align:center; font-style:italic;">Standard D6 Construction Net</p>
+        </div>
     `;
 
     diceContainer.innerHTML = diceHtml;
