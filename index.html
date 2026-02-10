@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Board Game Builder</title>
+    <link rel="stylesheet" href="style.css">
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "https://esm.sh/three@0.160.0",
+                "three/addons/": "https://esm.sh/three@0.160.0/examples/jsm/"
+            }
+        }
+    </script>
+</head>
+<body>
+
+    <!-- 3D Canvas Container -->
+    <div id="canvas-container"></div>
+
+    <!-- UI Overlay -->
+    <div id="ui-layer">
+        
+        <!-- Top Bar -->
+        <header class="top-bar">
+            <h1>Board Builder</h1>
+            <div class="actions">
+                <button id="btn-print" class="icon-btn" aria-label="Print">
+                    <img src="asset_icon_print.png" alt="Print">
+                    <span>Print</span>
+                </button>
+            </div>
+        </header>
+
+        <!-- Piece Designer Panel (Bottom Sheet style) -->
+        <div id="designer-panel" class="panel">
+            <div class="panel-header">
+                <h2>Design Piece</h2>
+                <button id="close-designer">×</button>
+            </div>
+            <div class="panel-content">
+                <div class="form-group">
+                    <label>Shape</label>
+                    <div class="toggle-group">
+                        <label class="radio-label">
+                            <input type="radio" name="shape" value="square" checked>
+                            <span class="box-shape">Square</span>
+                        </label>
+                        <label class="radio-label">
+                            <input type="radio" name="shape" value="circle">
+                            <span class="circle-shape">Circle</span>
+                        </label>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>Color</label>
+                    <input type="color" id="piece-color" value="#3498db">
+                </div>
+
+                <div class="form-group">
+                    <label>Label (Optional)</label>
+                    <input type="text" id="piece-text" placeholder="e.g. Start" maxlength="8">
+                </div>
+
+                <button id="add-piece-btn" class="primary-btn">Add to Palette</button>
+            </div>
+        </div>
+
+        <!-- Main Controls (Bottom) -->
+        <div class="bottom-controls">
+            <div id="palette-list" class="palette-scroll">
+                <!-- Palette items injected here -->
+                <button id="new-piece-btn" class="palette-item add-new">
+                    <span>+</span>
+                </button>
+            </div>
+            <div class="instructions">Select a piece, then tap grid to place.</div>
+        </div>
+
+    </div>
+
+    <!-- Print Container (Hidden until print) -->
+    <div id="print-container">
+        <div class="print-header">
+            <h1>Game Board Kit</h1>
+            <p>Cut out these pieces and glue them to a backing board.</p>
+        </div>
+        
+        <div id="print-stats"></div>
+
+        <h2 class="print-section-title">Board Tiles (Real Size)</h2>
+        <div id="print-tiles-grid"></div>
+
+        <h2 class="print-section-title break-before">Dice Template</h2>
+        <div id="print-dice-area"></div>
+    </div>
+
+    <script type="module" src="main.js"></script>
+<script defer src="https://static.cloudflareinsights.com/beacon.min.js/v8c78df7c7c0f484497ecbca7046644da1771523124516" integrity="sha512-8DS7rgIrAmghBFwoOTujcf6D9rXvH8xm8JQ1Ja01h9QX8EzXldiszufYa4IFfKdLUKTTrnSFXLDkUEOTrZQ8Qg==" data-cf-beacon='{"version":"2024.11.0","token":"4c6229722a6346bc8eb5cb0e5eae5d41","server_timing":{"name":{"cfCacheStatus":true,"cfEdge":true,"cfExtPri":true,"cfL4":true,"cfOrigin":true,"cfSpeedBrain":true},"location_startswith":null}}' crossorigin="anonymous"></script>
+</body>
+</html>
