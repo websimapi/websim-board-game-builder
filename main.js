@@ -107,7 +107,7 @@ function init() {
 
         try {
             const result = await websim.imageGen({
-                prompt: prompt + ", texture, pattern, top down view, flat lighting, game asset",
+                prompt: `Top-down view illustration of ${prompt} for a board game tile. Flat vector art style, simple, clear, game asset. No text.`,
                 aspect_ratio: "1:1"
             });
             
@@ -313,7 +313,7 @@ async function runAiGeneration(theme, complexity, useTextures) {
             try {
                 // Generate texture
                 const imgResult = await websim.imageGen({
-                    prompt: `Top down view of a square board game tile representing "${p.text}" (${p.tag}), theme: ${theme}. ${p.color} tint. Simple, flat vector art style, game asset, white background.`,
+                    prompt: `Top-down view illustration of "${p.text}" for a board game tile, theme: ${theme}. Flat vector art style, simple, clear, game asset. No text.`,
                     aspect_ratio: "1:1"
                 });
                 
