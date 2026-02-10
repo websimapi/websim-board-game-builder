@@ -106,8 +106,11 @@ function init() {
         btnGenerateTexture.disabled = true;
 
         try {
+            // Include project context for better relevance
+            const projectContext = appState.activeProject ? `Game Context: "${appState.activeProject.name}".` : "";
+
             const result = await websim.imageGen({
-                prompt: `Top-down view illustration of ${prompt} for a board game tile. Flat vector art style, simple, clear, game asset. No text.`,
+                prompt: `Top-down view board game tile design. Subject: ${prompt}. ${projectContext} Style: Flat vector art, clear, colorful. No text labels.`,
                 aspect_ratio: "1:1"
             });
             
@@ -281,11 +284,16 @@ async function runAiGeneration(theme, complexity, useTextures) {
     5. "color" should be a hex code suitable for the theme.
     6. "text" is the label on the tile (max 8 chars).
     7. "tag" categorizes the tile (e.g. Start, End, Path, Hazard, Bonus).
+    8. "visual_prompt": A specific, descriptive prompt for an AI image generator to create the tile's face. 
+       - Context: The game theme is "${theme}".
+       - If the tile represents a location or surface (e.g. "Path", "Swamp"), describe a texture (e.g. "dark muddy swamp water texture").
+       - If the tile represents an action or object (e.g. "Jump", "Trap"), describe an illustration (e.g. "simple icon of a boot jumping", "bear trap illustration").
+       - Ensure the visual style fits the theme.
     
     Respond with JSON only:
     {
         "tiles": [
-            { "text": "Start", "color": "#hex", "shape": "square", "tag": "Start" },
+            { "text": "Start", "color": "#hex", "shape": "square", "tag": "Start", "visual_prompt": "..." },
             ...
         ]
     }`;
@@ -311,9 +319,10 @@ async function runAiGeneration(theme, complexity, useTextures) {
             aiSteps[0].innerHTML = `<span class="step-icon">🎨</span> Painting tile ${i + 1}/${paletteWithIds.length}: ${p.text}...`;
             
             try {
-                // Generate texture
+                // Generate texture using the smart visual prompt from step 1
+                // We add some style enforcers to ensure consistency across the board
                 const imgResult = await websim.imageGen({
-                    prompt: `Top-down view illustration of "${p.text}" for a board game tile, theme: ${theme}. Flat vector art style, simple, clear, game asset. No text.`,
+                    prompt: `Top-down view board game tile. ${p.visual_prompt || p.text}. Style: Flat vector art, simple, clear, colorful. No text.`,
                     aspect_ratio: "1:1"
                 });
                 
