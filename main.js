@@ -37,6 +37,7 @@ const btnCloseAi = document.getElementById('close-ai');
 const btnGenerateAi = document.getElementById('btn-generate-ai');
 const inpAiPrompt = document.getElementById('ai-prompt');
 const inpAiComplexity = document.getElementById('ai-complexity');
+const inpAiReuseRadios = document.getElementsByName('ai-reuse');
 const inpAiStyleRadios = document.getElementsByName('ai-style');
 const aiStatusContainer = document.getElementById('ai-status-container');
 const aiSteps = [
@@ -234,6 +235,7 @@ function init() {
     btnGenerateAi.addEventListener('click', async () => {
         const prompt = inpAiPrompt.value.trim();
         const complexity = inpAiComplexity.value;
+        const reuseMode = Array.from(inpAiReuseRadios).find(r => r.checked).value;
         const useTextures = Array.from(inpAiStyleRadios).find(r => r.checked).value === 'texture';
         
         if (!prompt) {
@@ -247,7 +249,7 @@ function init() {
         aiStatusContainer.style.display = 'flex';
         
         try {
-            await runAiGeneration(prompt, complexity, useTextures);
+            await runAiGeneration(prompt, complexity, useTextures, reuseMode);
             aiModal.classList.remove('open');
         } catch (err) {
             console.error(err);
@@ -258,7 +260,7 @@ function init() {
     });
 }
 
-async function runAiGeneration(theme, complexity, useTextures) {
+async function runAiGeneration(theme, complexity, useTextures, reuseMode) {
     const updateStep = (index, status) => {
         if (status === 'active') {
             aiSteps[index].classList.add('active');
@@ -269,34 +271,67 @@ async function runAiGeneration(theme, complexity, useTextures) {
         }
     };
 
+    const sizeMap = {
+        small: { tiles: 15, size: "10x10" },
+        medium: { tiles: 30, size: "15x15" },
+        large: { tiles: 50, size: "20x20" }
+    };
+    const specs = sizeMap[complexity];
+    const isUnique = reuseMode === 'unique';
+
     // --- STEP 1: Generate Palette ---
     updateStep(0, 'active');
     aiSteps[0].innerHTML = `<span class="step-icon">🎲</span> Generating Game Pieces...`;
     
-    const palettePrompt = `
-    Create a set of board game tiles for a "${theme}" themed game.
-    
-    Constraints:
-    1. Must include exactly 1 "Start" tile.
-    2. Must include exactly 1 "Finish" tile.
-    3. Include 4-8 other types of tiles (e.g. basic path, special event, hazard, bonus).
-    4. "shape" must be "square" or "circle".
-    5. "color" should be a hex code suitable for the theme.
-    6. "text" is the label on the tile (max 8 chars).
-    7. "tag" categorizes the tile (e.g. Start, End, Path, Hazard, Bonus).
-    8. "visual_prompt": A specific, descriptive prompt for an AI image generator to create the tile's face. 
-       - Context: The game theme is "${theme}".
-       - If the tile represents a location or surface (e.g. "Path", "Swamp"), describe a texture (e.g. "dark muddy swamp water texture").
-       - If the tile represents an action or object (e.g. "Jump", "Trap"), describe an illustration (e.g. "simple icon of a boot jumping", "bear trap illustration").
-       - Ensure the visual style fits the theme.
-    
-    Respond with JSON only:
-    {
-        "tiles": [
-            { "text": "Start", "color": "#hex", "shape": "square", "tag": "Start", "visual_prompt": "..." },
-            ...
-        ]
-    }`;
+    let palettePrompt;
+    if (isUnique) {
+        palettePrompt = `
+        Create a set of ${specs.tiles} UNIQUE board game tiles for a "${theme}" themed game.
+        
+        Constraints:
+        1. Must include exactly 1 "Start" tile.
+        2. Must include exactly 1 "Finish" tile.
+        3. Include exactly ${specs.tiles - 2} other tiles, each with a unique label and concept.
+        4. "shape" must be "square" or "circle".
+        5. "color" should be a hex code suitable for the theme.
+        6. "text" is the label on the tile (max 8 chars).
+        7. "tag" categorizes the tile (e.g. Start, End, Path, Hazard, Bonus).
+        8. "visual_prompt": A specific, descriptive prompt for an AI image generator. 
+           - Context: The game theme is "${theme}".
+           - Make each one distinct.
+        
+        Respond with JSON only:
+        {
+            "tiles": [
+                { "text": "Start", "color": "#hex", "shape": "square", "tag": "Start", "visual_prompt": "..." },
+                ...
+            ]
+        }`;
+    } else {
+        palettePrompt = `
+        Create a set of board game tiles for a "${theme}" themed game.
+        
+        Constraints:
+        1. Must include exactly 1 "Start" tile.
+        2. Must include exactly 1 "Finish" tile.
+        3. Include 4-8 other types of tiles (e.g. basic path, special event, hazard, bonus).
+        4. "shape" must be "square" or "circle".
+        5. "color" should be a hex code suitable for the theme.
+        6. "text" is the label on the tile (max 8 chars).
+        7. "tag" categorizes the tile (e.g. Start, End, Path, Hazard, Bonus).
+        8. "visual_prompt": A specific, descriptive prompt for an AI image generator.
+           - Context: The game theme is "${theme}".
+           - If the tile represents a location or surface (e.g. "Path", "Swamp"), describe a texture.
+           - If the tile represents an action or object (e.g. "Jump", "Trap"), describe an illustration.
+        
+        Respond with JSON only:
+        {
+            "tiles": [
+                { "text": "Start", "color": "#hex", "shape": "square", "tag": "Start", "visual_prompt": "..." },
+                ...
+            ]
+        }`;
+    }
 
     const paletteRes = await websim.chat.completions.create({
         messages: [{ role: "user", content: palettePrompt }],
@@ -342,39 +377,57 @@ async function runAiGeneration(theme, complexity, useTextures) {
     // --- STEP 2: Generate Layout ---
     updateStep(1, 'active');
 
-    const sizeMap = {
-        small: { tiles: 15, size: "10x10" },
-        medium: { tiles: 30, size: "15x15" },
-        large: { tiles: 50, size: "20x20" }
-    };
-    const specs = sizeMap[complexity];
-
     // Find critical IDs
     const startTile = paletteWithIds.find(p => p.tag === 'Start') || paletteWithIds[0];
     const finishTile = paletteWithIds.find(p => p.tag === 'Finish') || paletteWithIds[paletteWithIds.length - 1];
     
-    const gridPrompt = `
-    Generate a 2D grid layout for a board game using these available tiles:
-    ${JSON.stringify(paletteWithIds.map(p => ({ id: p.id, tag: p.tag, text: p.text })))}
+    let gridPrompt;
+    
+    if (isUnique) {
+        gridPrompt = `
+        Generate a 2D grid layout using EVERY tile from this list exactly once:
+        ${JSON.stringify(paletteWithIds.map(p => ({ id: p.id, tag: p.tag, text: p.text })))}
 
-    Goal: Create a playable path from Start to Finish.
-    Target Length: Approx ${specs.tiles} tiles.
-    Boundaries: Keep within ${specs.size} coordinate system (x, z).
+        Goal: Create a single continuous path from Start to Finish using all ${paletteWithIds.length} tiles.
+        Boundaries: Keep within ${specs.size} coordinate system (x, z).
 
-    Rules:
-    1. Place exactly one "${startTile.id}" (Start).
-    2. Place exactly one "${finishTile.id}" (Finish).
-    3. Connect them with a winding, interesting path of other tiles.
-    4. Ensure the path is continuous (tiles are adjacent horizontally or vertically).
-    5. Coordinates x, z must be integers.
+        Rules:
+        1. Start with "${startTile.id}".
+        2. End with "${finishTile.id}".
+        3. All other tiles must be placed exactly once in a continuous chain between Start and Finish.
+        4. Coordinates x, z must be integers.
 
-    Respond with JSON only:
-    {
-        "layout": [
-            { "x": 0, "z": 0, "tileId": "${startTile.id}" },
-            ...
-        ]
-    }`;
+        Respond with JSON only:
+        {
+            "layout": [
+                { "x": 0, "z": 0, "tileId": "${startTile.id}" },
+                ...
+            ]
+        }`;
+    } else {
+        gridPrompt = `
+        Generate a 2D grid layout for a board game using these available tiles:
+        ${JSON.stringify(paletteWithIds.map(p => ({ id: p.id, tag: p.tag, text: p.text })))}
+
+        Goal: Create a playable path from Start to Finish.
+        Target Length: Approx ${specs.tiles} tiles.
+        Boundaries: Keep within ${specs.size} coordinate system (x, z).
+
+        Rules:
+        1. Place exactly one "${startTile.id}" (Start).
+        2. Place exactly one "${finishTile.id}" (Finish).
+        3. Connect them with a winding, interesting path of other tiles.
+        4. Ensure the path is continuous (tiles are adjacent horizontally or vertically).
+        5. Coordinates x, z must be integers.
+
+        Respond with JSON only:
+        {
+            "layout": [
+                { "x": 0, "z": 0, "tileId": "${startTile.id}" },
+                ...
+            ]
+        }`;
+    }
 
     const gridRes = await websim.chat.completions.create({
         messages: [{ role: "user", content: gridPrompt }],
