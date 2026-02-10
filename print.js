@@ -89,48 +89,112 @@ export function generatePrintLayout() {
 
     // 4. Render Dice
     // Standard D6 template with folding tabs
+    // Layout: 
+    //   1 (Top)
+    // 4 2 3 5 (Left, Front, Right, Back)
+    //   6 (Bottom)
+    
     const diceHtml = `
         <div class="print-page">
-            <div style="display:flex; flex-direction: column; align-items: center; gap: 0;">
-                <!-- Row 1 -->
-            <div style="display:flex;">
-                 <div style="width: 4cm; height: 4cm;"></div>
-                 <div class="dice-face" style="background: white;">1
-                    <div class="tab-top" style="top:-1cm; left:0; width:100%; height:1cm; clip-path: polygon(20% 0, 80% 0, 100% 100%, 0 100%); border:1px solid #999; border-bottom:none;">glue</div>
-                    <div class="tab-left" style="left:-1cm; top:0; width:1cm; height:100%; clip-path: polygon(0 20%, 0 80%, 100% 100%, 100% 0); border:1px solid #999; border-right:none;">glue</div>
-                    <div class="tab-right" style="right:-1cm; top:0; width:1cm; height:100%; clip-path: polygon(100% 20%, 100% 80%, 0 100%, 0 0); border:1px solid #999; border-left:none;">glue</div>
-                 </div>
-                 <div style="width: 4cm; height: 4cm;"></div>
-                 <div style="width: 4cm; height: 4cm;"></div>
+            <h2 style="margin-bottom: 1cm; text-align: center;">Standard D6 Construction Net</h2>
+            
+            <div class="dice-net">
+                <!-- Row 1: Top (1) -->
+                <div class="dice-row">
+                    <div class="dice-spacer"></div>
+                    ${createDiceFace(1, ['top', 'left', 'right'])}
+                    <div class="dice-spacer"></div>
+                    <div class="dice-spacer"></div>
+                </div>
+                
+                <!-- Row 2: Left(4), Front(2), Right(3), Back(5) -->
+                <div class="dice-row">
+                    ${createDiceFace(4, [])}
+                    ${createDiceFace(2, [])}
+                    ${createDiceFace(3, [])}
+                    ${createDiceFace(5, ['right'])}
+                </div>
+
+                <!-- Row 3: Bottom (6) -->
+                <div class="dice-row">
+                    <div class="dice-spacer"></div>
+                    ${createDiceFace(6, ['bottom', 'left', 'right'])}
+                    <div class="dice-spacer"></div>
+                    <div class="dice-spacer"></div>
+                </div>
             </div>
-            <!-- Row 2 -->
-            <div style="display:flex;">
-                 <div class="dice-face" style="background: white;">2
-                    <div class="tab-left" style="left:-1cm; top:0; width:1cm; height:100%; clip-path: polygon(0 20%, 0 80%, 100% 100%, 100% 0); border:1px solid #999; border-right:none;">glue</div>
-                 </div>
-                 <div class="dice-face" style="background: white;">3</div>
-                 <div class="dice-face" style="background: white;">4</div>
-                 <div class="dice-face" style="background: white;">5
-                    <div class="tab-right" style="right:-1cm; top:0; width:1cm; height:100%; clip-path: polygon(100% 20%, 100% 80%, 0 100%, 0 0); border:1px solid #999; border-left:none;">glue</div>
-                 </div>
+            
+            <div style="margin-top: 2cm; text-align: center; color: #666;">
+                <p><strong>Instructions:</strong></p>
+                <p>1. Cut along the solid outer lines (including tabs).</p>
+                <p>2. Fold along all internal lines.</p>
+                <p>3. Apply glue to the "glue" tabs and assemble the cube.</p>
             </div>
-            <!-- Row 3 -->
-            <div style="display:flex;">
-                 <div style="width: 4cm; height: 4cm;"></div>
-                 <div class="dice-face" style="background: white;">6
-                    <div class="tab-bottom" style="bottom:-1cm; left:0; width:100%; height:1cm; clip-path: polygon(20% 100%, 80% 100%, 100% 0, 0 0); border:1px solid #999; border-top:none;">glue</div>
-                    <div class="tab-left" style="left:-1cm; top:0; width:1cm; height:100%; clip-path: polygon(0 20%, 0 80%, 100% 100%, 100% 0); border:1px solid #999; border-right:none;">glue</div>
-                    <div class="tab-right" style="right:-1cm; top:0; width:1cm; height:100%; clip-path: polygon(100% 20%, 100% 80%, 0 100%, 0 0); border:1px solid #999; border-left:none;">glue</div>
-                 </div>
-                 <div style="width: 4cm; height: 4cm;"></div>
-                 <div style="width: 4cm; height: 4cm;"></div>
-            </div>
-            <p style="text-align:center; font-style:italic;">Standard D6 Construction Net</p>
-        </div>
         </div>
     `;
 
     diceContainer.innerHTML = diceHtml;
+}
+
+function createDiceFace(number, tabs) {
+    let tabsHtml = '';
+    tabs.forEach(pos => {
+        tabsHtml += createTab(pos);
+    });
+    
+    return `
+        <div class="dice-face">
+            <span>${number}</span>
+            ${tabsHtml}
+        </div>
+    `;
+}
+
+function createTab(position) {
+    let d = '';
+    let xText = 50, yText = 15;
+    
+    // Define SVG paths for trapezoids based on position
+    // ViewBox 0 0 100 20 (approx ratio)
+    if (position === 'top') {
+        // Pointing Up
+        d = "M15,20 L25,1 L75,1 L85,20"; 
+        yText = 14;
+    } else if (position === 'bottom') {
+        // Pointing Down
+        d = "M15,0 L25,19 L75,19 L85,0";
+        yText = 12;
+    } else if (position === 'left') {
+        // Pointing Left (Vertical)
+        // ViewBox 0 0 20 100
+        d = "M20,15 L1,25 L1,75 L20,85";
+        return `
+        <div class="dice-tab tab-${position}">
+            <svg viewBox="0 0 20 100" preserveAspectRatio="none" width="100%" height="100%">
+                <path vector-effect="non-scaling-stroke" d="${d}" fill="#f0f0f0" stroke="#999" stroke-width="1" stroke-dasharray="2,0" />
+                <text x="10" y="50" text-anchor="middle" dominant-baseline="middle" font-size="8" fill="#999" transform="rotate(-90, 10, 50)">glue</text>
+            </svg>
+        </div>`;
+    } else if (position === 'right') {
+        // Pointing Right (Vertical)
+        d = "M0,15 L19,25 L19,75 L0,85";
+        return `
+        <div class="dice-tab tab-${position}">
+            <svg viewBox="0 0 20 100" preserveAspectRatio="none" width="100%" height="100%">
+                <path vector-effect="non-scaling-stroke" d="${d}" fill="#f0f0f0" stroke="#999" stroke-width="1" stroke-dasharray="2,0" />
+                <text x="10" y="50" text-anchor="middle" dominant-baseline="middle" font-size="8" fill="#999" transform="rotate(90, 10, 50)">glue</text>
+            </svg>
+        </div>`;
+    }
+
+    return `
+        <div class="dice-tab tab-${position}">
+            <svg viewBox="0 0 100 20" preserveAspectRatio="none" width="100%" height="100%">
+                <path vector-effect="non-scaling-stroke" d="${d}" fill="#f0f0f0" stroke="#999" stroke-width="1" stroke-dasharray="2,0" />
+                <text x="${xText}" y="${yText}" text-anchor="middle" font-size="8" fill="#999">glue</text>
+            </svg>
+        </div>
+    `;
 }
 
 // Helper to check color brightness

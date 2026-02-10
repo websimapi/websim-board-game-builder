@@ -389,6 +389,22 @@ input[type="text"]:focus {
         print-color-adjust: exact;
     }
     
+    .dice-net {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+    }
+    
+    .dice-row {
+        display: flex;
+        justify-content: center;
+    }
+
+    .dice-spacer {
+        width: 4cm;
+        height: 4cm;
+    }
+
     .dice-face {
         width: 4cm; 
         height: 4cm; 
@@ -396,10 +412,52 @@ input[type="text"]:focus {
         display: flex; 
         align-items: center; 
         justify-content: center; 
-        font-size: 24pt; 
+        font-size: 2rem;
+        font-weight: bold;
         position: relative;
         box-sizing: border-box;
+        background: white;
+        overflow: visible;
+        z-index: 10;
         -webkit-print-color-adjust: exact;
         print-color-adjust: exact;
+    }
+
+    /* Handle overlapping borders visually */
+    .dice-row .dice-face + .dice-face {
+        border-left: none;
+    }
+    /* Vertical border handling would require knowing grid position, simpler to just accept 2px or neg margin */
+    /* Let's use negative margin for pixel perfection */
+    .dice-face { margin: -0.5px; } 
+
+    .dice-tab {
+        position: absolute;
+        z-index: -1;
+    }
+    
+    .tab-top { 
+        top: -0.8cm; 
+        left: -1px; 
+        right: -1px; 
+        height: 0.8cm; 
+    }
+    .tab-bottom { 
+        bottom: -0.8cm; 
+        left: -1px; 
+        right: -1px; 
+        height: 0.8cm; 
+    }
+    .tab-left { 
+        left: -0.8cm; 
+        top: -1px; 
+        bottom: -1px; 
+        width: 0.8cm; 
+    }
+    .tab-right { 
+        right: -0.8cm; 
+        top: -1px; 
+        bottom: -1px; 
+        width: 0.8cm; 
     }
 }
