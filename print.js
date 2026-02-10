@@ -29,7 +29,7 @@ export function generatePrintLayout() {
     
     let statsHtml = `
         <div style="width: 100%; border-bottom: 2px solid #333; margin-bottom: 1cm; padding-bottom: 1cm;">
-            <h1 style="font-size: 3rem; margin: 0;">Game Board Kit</h1>
+            <h1 style="font-size: 3rem; margin: 0;">${appState.activeProject ? appState.activeProject.name : 'Game Board Kit'}</h1>
             <p style="font-size: 1.5rem; color: #666;">Assembly Instructions & Manifest</p>
         </div>
         

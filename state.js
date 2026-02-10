@@ -1,6 +1,6 @@
-// Manage application state
+// Manage application state with Persistence and Multi-Project support
 
-// Default palettes
+// Default palette for new projects
 const defaultPalette = [
     { id: 'p1', shape: 'square', color: '#e74c3c', text: 'START' },
     { id: 'p2', shape: 'square', color: '#f1c40f', text: '?' },
@@ -10,19 +10,38 @@ const defaultPalette = [
 
 class State {
     constructor() {
-        this.palette = [...defaultPalette];
-        // Grid is a map of "x,z" coordinates to palette IDs
-        this.grid = new Map();
-        
-        // Initial simple board layout
-        this.grid.set('0,0', 'p1');
-        this.grid.set('1,0', 'p3');
-        this.grid.set('2,0', 'p3');
-        this.grid.set('3,0', 'p2');
-        
-        this.selectedPaletteId = 'p1';
         this.listeners = [];
+        this.projects = [];
+        this.activeProjectId = null;
+
+        // Load data from LocalStorage
+        this.load();
+
+        // If no data or invalid state, create default
+        if (!this.activeProjectId || this.projects.length === 0) {
+            this.createProject('My First Board', true);
+        }
     }
+
+    // --- Accessors for Active Project (Proxy) ---
+
+    get activeProject() {
+        return this.projects.find(p => p.id === this.activeProjectId) || this.projects[0];
+    }
+
+    get palette() {
+        return this.activeProject.palette;
+    }
+
+    get grid() {
+        return this.activeProject.grid;
+    }
+
+    get selectedPaletteId() {
+        return this.activeProject.selectedPaletteId;
+    }
+
+    // --- Core Methods ---
 
     subscribe(callback) {
         this.listeners.push(callback);
@@ -30,38 +49,159 @@ class State {
 
     notify() {
         this.listeners.forEach(cb => cb(this));
+        this.save(); // Auto-save on every change
     }
+
+    // --- Persistence ---
+
+    save() {
+        try {
+            const data = {
+                activeProjectId: this.activeProjectId,
+                projects: this.projects.map(p => ({
+                    id: p.id,
+                    name: p.name,
+                    palette: p.palette,
+                    selectedPaletteId: p.selectedPaletteId,
+                    grid: Array.from(p.grid.entries()), // Serialize Map to Array
+                    lastModified: p.lastModified
+                }))
+            };
+            localStorage.setItem('board_builder_v1', JSON.stringify(data));
+        } catch (e) {
+            console.error("Save failed", e);
+        }
+    }
+
+    load() {
+        const json = localStorage.getItem('board_builder_v1');
+        if (json) {
+            try {
+                const data = JSON.parse(json);
+                if (Array.isArray(data.projects) && data.projects.length > 0) {
+                    this.projects = data.projects.map(p => ({
+                        ...p,
+                        grid: new Map(p.grid) // Deserialize Array to Map
+                    }));
+                    this.activeProjectId = data.activeProjectId;
+                }
+            } catch (e) {
+                console.warn('Corrupt save data, resetting.');
+                localStorage.removeItem('board_builder_v1');
+            }
+        }
+    }
+
+    // --- Project Management ---
+
+    createProject(name = 'New Board', isDefault = false) {
+        const id = 'proj_' + Date.now() + Math.floor(Math.random() * 1000);
+        const project = {
+            id,
+            name,
+            palette: JSON.parse(JSON.stringify(defaultPalette)),
+            grid: new Map(),
+            selectedPaletteId: 'p1',
+            lastModified: Date.now()
+        };
+
+        if (isDefault) {
+            // Simple starter layout
+            project.grid.set('0,0', 'p1');
+            project.grid.set('1,0', 'p3');
+            project.grid.set('2,0', 'p3');
+            project.grid.set('3,0', 'p2');
+        }
+
+        this.projects.push(project);
+        this.activeProjectId = id;
+        this.notify();
+    }
+
+    switchProject(id) {
+        const p = this.projects.find(p => p.id === id);
+        if (p) {
+            this.activeProjectId = id;
+            this.notify();
+        }
+    }
+
+    duplicateProject(id) {
+        const p = this.projects.find(p => p.id === id);
+        if (p) {
+            const newId = 'proj_' + Date.now() + Math.floor(Math.random() * 1000);
+            const clone = {
+                ...p,
+                id: newId,
+                name: p.name + ' (Copy)',
+                palette: JSON.parse(JSON.stringify(p.palette)),
+                grid: new Map(p.grid),
+                lastModified: Date.now()
+            };
+            this.projects.push(clone);
+            this.activeProjectId = newId;
+            this.notify();
+        }
+    }
+
+    deleteProject(id) {
+        if (this.projects.length <= 1) {
+            alert("Cannot delete the last project.");
+            return;
+        }
+        
+        const index = this.projects.findIndex(p => p.id === id);
+        if (index > -1) {
+            this.projects.splice(index, 1);
+            // If we deleted the active project, switch to another
+            if (this.activeProjectId === id) {
+                this.activeProjectId = this.projects[0].id;
+            }
+            this.notify();
+        }
+    }
+
+    renameProject(id, newName) {
+        const p = this.projects.find(p => p.id === id);
+        if (p) {
+            p.name = newName;
+            p.lastModified = Date.now();
+            this.notify();
+        }
+    }
+
+    // --- Content Management (Proxied) ---
 
     addPaletteItem(item) {
         const id = 'p' + Date.now();
-        this.palette.push({ ...item, id });
+        this.activeProject.palette.push({ ...item, id });
         this.selectPaletteItem(id);
-        this.notify();
+        // notify called by selectPaletteItem
         return id;
     }
 
     selectPaletteItem(id) {
-        this.selectedPaletteId = id;
+        this.activeProject.selectedPaletteId = id;
         this.notify();
     }
 
     toggleGridItem(x, z) {
         const key = `${x},${z}`;
-        if (this.grid.has(key)) {
-            // If clicking same piece, remove it? Or replace?
-            // Let's replace if different, remove if same for now.
-            // Actually, standard painting behavior: always paint. 
-            // If same, maybe delete? Let's implement Delete as a tool later or just overwrite.
-            // For simplicity: If holding a piece, overwrite. If holding nothing (not implemented), delete.
-            // Let's implement toggle: If exactly same ID, remove. Else overwrite.
-            if (this.grid.get(key) === this.selectedPaletteId) {
-                this.grid.delete(key);
+        const currentGrid = this.activeProject.grid;
+        
+        if (currentGrid.has(key)) {
+            // If clicking with same piece, remove (or toggle off)
+            // If clicking with different piece, replace
+            if (currentGrid.get(key) === this.activeProject.selectedPaletteId) {
+                currentGrid.delete(key);
             } else {
-                this.grid.set(key, this.selectedPaletteId);
+                currentGrid.set(key, this.activeProject.selectedPaletteId);
             }
         } else {
-            this.grid.set(key, this.selectedPaletteId);
+            currentGrid.set(key, this.activeProject.selectedPaletteId);
         }
+        
+        this.activeProject.lastModified = Date.now();
         this.notify();
     }
 

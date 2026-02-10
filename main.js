@@ -10,6 +10,13 @@ const btnCloseDesigner = document.getElementById('close-designer');
 const btnAddPiece = document.getElementById('add-piece-btn');
 const btnPrint = document.getElementById('btn-print');
 
+// Project Manager Elements
+const btnProjects = document.getElementById('btn-projects');
+const projectsModal = document.getElementById('projects-modal');
+const btnCloseProjects = document.getElementById('close-projects');
+const btnCreateProject = document.getElementById('btn-create-project');
+const projectsListEl = document.getElementById('projects-list');
+
 // Designer Inputs
 const inpShapeRadios = document.getElementsByName('shape');
 const inpColor = document.getElementById('piece-color');
@@ -38,6 +45,89 @@ function init() {
     btnPrint.addEventListener('click', () => {
         generatePrintLayout();
         window.print();
+    });
+
+    // Project Manager Listeners
+    btnProjects.addEventListener('click', openProjectsModal);
+    btnCloseProjects.addEventListener('click', closeProjectsModal);
+    btnCreateProject.addEventListener('click', () => {
+        const name = prompt("Enter board name:", "New Board Game");
+        if(name) {
+            appState.createProject(name);
+            renderProjectsList(); // Refresh list
+        }
+    });
+}
+
+function openProjectsModal() {
+    renderProjectsList();
+    projectsModal.classList.add('open');
+}
+
+function closeProjectsModal() {
+    projectsModal.classList.remove('open');
+}
+
+function renderProjectsList() {
+    projectsListEl.innerHTML = '';
+    
+    // Sort by modified date descending
+    const sortedProjects = [...appState.projects].sort((a, b) => b.lastModified - a.lastModified);
+
+    sortedProjects.forEach(p => {
+        const isActive = p.id === appState.activeProjectId;
+        const card = document.createElement('div');
+        card.className = `project-card ${isActive ? 'active' : ''}`;
+        
+        const dateStr = new Date(p.lastModified).toLocaleDateString() + ' ' + new Date(p.lastModified).toLocaleTimeString();
+        
+        card.innerHTML = `
+            <div class="project-info">
+                <h3>
+                    ${p.name}
+                    ${isActive ? '<span style="font-size:0.7em; background:var(--primary); color:white; padding:2px 6px; border-radius:4px;">ACTIVE</span>' : ''}
+                </h3>
+                <p>Last edited: ${dateStr}</p>
+                <p>${p.grid.size} tiles • ${p.palette.length} piece types</p>
+            </div>
+            <div class="project-actions">
+                ${!isActive ? `<button class="icon-btn" title="Open" data-action="open">📂</button>` : ''}
+                <button class="icon-btn" title="Rename" data-action="rename">✏️</button>
+                <button class="icon-btn" title="Duplicate" data-action="duplicate">📄</button>
+                <button class="icon-btn delete" title="Delete" data-action="delete">🗑️</button>
+            </div>
+        `;
+
+        // Action Handling
+        card.querySelectorAll('button').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                const action = btn.dataset.action;
+                
+                if (action === 'open') {
+                    appState.switchProject(p.id);
+                    renderProjectsList();
+                    // Optional: Close modal automatically on switch?
+                    // closeProjectsModal(); 
+                } else if (action === 'rename') {
+                    const newName = prompt("Rename board:", p.name);
+                    if (newName) {
+                        appState.renameProject(p.id, newName);
+                        renderProjectsList();
+                    }
+                } else if (action === 'duplicate') {
+                    appState.duplicateProject(p.id);
+                    renderProjectsList();
+                } else if (action === 'delete') {
+                    if (confirm(`Are you sure you want to delete "${p.name}"?`)) {
+                        appState.deleteProject(p.id);
+                        renderProjectsList();
+                    }
+                }
+            });
+        });
+
+        projectsListEl.appendChild(card);
     });
 }
 
