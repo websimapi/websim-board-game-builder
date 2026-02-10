@@ -316,45 +316,63 @@ input[type="text"]:focus {
 }
 
 @media print {
-    @page { margin: 0.5cm; }
-    body * { visibility: hidden; }
+    @page { 
+        margin: 0;
+        size: auto;
+    }
+    
+    body {
+        margin: 0;
+        padding: 0;
+        background: white;
+        overflow: visible !important;
+    }
+
+    body * { 
+        visibility: hidden; 
+    }
+
     #print-container, #print-container * {
         visibility: visible;
     }
+
     #print-container {
+        display: block !important;
         position: absolute;
         left: 0;
         top: 0;
         width: 100%;
+        background: white;
+        z-index: 9999;
     }
 
-    .print-section-title {
+    .print-header, .print-section-title {
         display: none;
     }
 
     .print-page {
-        width: 100vw;
-        height: 95vh;
+        width: 100%;
+        height: 100vh;
         display: flex;
         flex-direction: column;
         align-items: center;
         justify-content: center;
-        page-break-before: always;
-        break-before: page;
+        page-break-after: always;
+        break-after: page;
     }
     
     .print-piece.square {
-        width: 18cm; 
-        height: 18cm;
-        border: 2px solid #333;
+        width: 16cm; 
+        height: 16cm;
+        border: 4px solid #000;
         -webkit-print-color-adjust: exact;
         print-color-adjust: exact;
     }
     .print-piece.circle {
-        width: 18cm;
-        height: 18cm;
+        width: 16cm;
+        height: 16cm;
         border-radius: 50%;
-        border: 2px solid #333;
+        border: 4px solid #000;
         overflow: hidden;
         -webkit-print-color-adjust: exact;
         print-color-adjust: exact;
@@ -365,8 +383,8 @@ input[type="text"]:focus {
         display: flex;
         align-items: center;
         justify-content: center;
-        font-weight: bold;
-        font-size: 6rem;
+        font-weight: 800;
+        font-size: 8rem;
         -webkit-print-color-adjust: exact;
         print-color-adjust: exact;
     }

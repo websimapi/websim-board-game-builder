@@ -19,16 +19,43 @@ export function generatePrintLayout() {
         counts[paletteId] = (counts[paletteId] || 0) + 1;
     });
 
-    // 2. Render Stats
-    let statsHtml = '<h3>Parts Needed:</h3><ul>';
+    // 2. Render Stats (Cover Page)
+    const coverPage = document.createElement('div');
+    coverPage.className = 'print-page';
+    coverPage.style.alignItems = 'flex-start'; 
+    coverPage.style.justifyContent = 'flex-start';
+    coverPage.style.padding = '2cm';
+    coverPage.style.boxSizing = 'border-box';
+    
+    let statsHtml = `
+        <div style="width: 100%; border-bottom: 2px solid #333; margin-bottom: 1cm; padding-bottom: 1cm;">
+            <h1 style="font-size: 3rem; margin: 0;">Game Board Kit</h1>
+            <p style="font-size: 1.5rem; color: #666;">Assembly Instructions & Manifest</p>
+        </div>
+        
+        <div style="font-size: 1.2rem; line-height: 1.6;">
+            <h3>Instructions:</h3>
+            <ol>
+                <li>Print all pages single-sided.</li>
+                <li>Cut out each game tile along the border.</li>
+                <li>Glue tiles onto a rigid backing (cardboard or foam board).</li>
+                <li>Assemble the dice by cutting, folding, and gluing the tabs.</li>
+            </ol>
+
+            <h3>Piece Manifest:</h3>
+            <ul>
+    `;
+    
     Object.keys(counts).forEach(pid => {
         const piece = appState.palette.find(p => p.id === pid);
         if(piece) {
-            statsHtml += `<li>${piece.shape.toUpperCase()} (${piece.color} "${piece.text}"): <strong>${counts[pid]}</strong></li>`;
+            statsHtml += `<li><strong>${counts[pid]}x</strong> ${piece.shape.toUpperCase()} <span style="display:inline-block; width:1em; height:1em; background:${piece.color}; border:1px solid #000; vertical-align:middle; margin:0 5px;"></span> ("${piece.text}")</li>`;
         }
     });
-    statsHtml += '</ul>';
-    statsContainer.innerHTML = statsHtml;
+    statsHtml += '</ul></div>';
+    
+    coverPage.innerHTML = statsHtml;
+    statsContainer.appendChild(coverPage);
 
     // 3. Render Tiles
     // Iterate through grid to print them in order? Or grouped?
