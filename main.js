@@ -274,11 +274,17 @@ function renderPalette() {
 function renderTags() {
     tagFiltersEl.innerHTML = '';
     
-    // Collect unique tags
-    const tags = new Set(['All']);
-    appState.palette.forEach(p => tags.add(p.tag || 'General'));
+    // Collect unique tags from the palette
+    const tagSet = new Set();
+    appState.palette.forEach(p => tagSet.add(p.tag || 'General'));
     
-    Array.from(tags).sort().forEach(tag => {
+    // Remove 'All' if it exists as a literal tag to prevent duplication
+    tagSet.delete('All');
+    
+    // Sort the custom tags and ensure 'All' is always the first item
+    const displayTags = ['All', ...Array.from(tagSet).sort()];
+    
+    displayTags.forEach(tag => {
         const chip = document.createElement('button');
         chip.className = `tag-chip ${currentTagFilter === tag ? 'active' : ''}`;
         chip.textContent = tag;
