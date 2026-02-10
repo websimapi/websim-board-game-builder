@@ -42,10 +42,8 @@ function init() {
 }
 
 function renderPalette() {
-    // Keep the "New" button, clear rest
-    // We select all items except the last one (which is the "add new" button)
-    const existing = paletteList.querySelectorAll('.palette-item:not(.add-new)');
-    existing.forEach(el => el.remove());
+    // Clear list
+    paletteList.innerHTML = '';
 
     appState.palette.forEach(piece => {
         const btn = document.createElement('button');
@@ -67,7 +65,7 @@ function renderPalette() {
             appState.selectPaletteItem(piece.id);
         });
 
-        paletteList.insertBefore(btn, btnNewPiece);
+        paletteList.appendChild(btn);
     });
 }
 
