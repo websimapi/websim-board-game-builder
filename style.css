@@ -362,15 +362,15 @@ input[type="text"]:focus {
     }
     
     .print-piece.square {
-        width: 16cm; 
-        height: 16cm;
+        width: 19cm; 
+        height: 19cm;
         border: 4px solid #000;
         -webkit-print-color-adjust: exact;
         print-color-adjust: exact;
     }
     .print-piece.circle {
-        width: 16cm;
-        height: 16cm;
+        width: 19cm;
+        height: 19cm;
         border-radius: 50%;
         border: 4px solid #000;
         overflow: hidden;
@@ -384,7 +384,7 @@ input[type="text"]:focus {
         align-items: center;
         justify-content: center;
         font-weight: 800;
-        font-size: 8rem;
+        font-size: 10rem;
         -webkit-print-color-adjust: exact;
         print-color-adjust: exact;
     }
