@@ -198,6 +198,20 @@
                         <option value="large">Hard / Epic (~50+ tiles)</option>
                     </select>
                 </div>
+
+                <div class="form-group">
+                    <label>Visual Style</label>
+                    <div class="toggle-group">
+                        <label class="radio-label">
+                            <input type="radio" name="ai-style" value="color" checked>
+                            <span>Colors Only (Fast)</span>
+                        </label>
+                        <label class="radio-label">
+                            <input type="radio" name="ai-style" value="texture">
+                            <span>AI Textures ✨ (Slow)</span>
+                        </label>
+                    </div>
+                </div>
                 
                 <div id="ai-status-container" style="display: none; flex-direction: column; gap: 10px; margin-top: 20px;">
                     <div class="ai-step" id="ai-step-1">

@@ -37,6 +37,7 @@ const btnCloseAi = document.getElementById('close-ai');
 const btnGenerateAi = document.getElementById('btn-generate-ai');
 const inpAiPrompt = document.getElementById('ai-prompt');
 const inpAiComplexity = document.getElementById('ai-complexity');
+const inpAiStyleRadios = document.getElementsByName('ai-style');
 const aiStatusContainer = document.getElementById('ai-status-container');
 const aiSteps = [
     document.getElementById('ai-step-1'),
@@ -230,6 +231,7 @@ function init() {
     btnGenerateAi.addEventListener('click', async () => {
         const prompt = inpAiPrompt.value.trim();
         const complexity = inpAiComplexity.value;
+        const useTextures = Array.from(inpAiStyleRadios).find(r => r.checked).value === 'texture';
         
         if (!prompt) {
             alert("Please enter a theme or description!");
@@ -242,7 +244,7 @@ function init() {
         aiStatusContainer.style.display = 'flex';
         
         try {
-            await runAiGeneration(prompt, complexity);
+            await runAiGeneration(prompt, complexity, useTextures);
             aiModal.classList.remove('open');
         } catch (err) {
             console.error(err);
@@ -253,7 +255,7 @@ function init() {
     });
 }
 
-async function runAiGeneration(theme, complexity) {
+async function runAiGeneration(theme, complexity, useTextures) {
     const updateStep = (index, status) => {
         if (status === 'active') {
             aiSteps[index].classList.add('active');
@@ -266,6 +268,7 @@ async function runAiGeneration(theme, complexity) {
 
     // --- STEP 1: Generate Palette ---
     updateStep(0, 'active');
+    aiSteps[0].innerHTML = `<span class="step-icon">🎲</span> Generating Game Pieces...`;
     
     const palettePrompt = `
     Create a set of board game tiles for a "${theme}" themed game.
@@ -299,6 +302,31 @@ async function runAiGeneration(theme, complexity) {
         ...p,
         id: `gen_p_${Date.now()}_${i}`
     }));
+
+    // --- STEP 1.5: Generate Textures (Optional) ---
+    if (useTextures) {
+        for (let i = 0; i < paletteWithIds.length; i++) {
+            const p = paletteWithIds[i];
+            // Update UI
+            aiSteps[0].innerHTML = `<span class="step-icon">🎨</span> Painting tile ${i + 1}/${paletteWithIds.length}: ${p.text}...`;
+            
+            try {
+                // Generate texture
+                const imgResult = await websim.imageGen({
+                    prompt: `Top down view of a square board game tile representing "${p.text}" (${p.tag}), theme: ${theme}. ${p.color} tint. Simple, flat vector art style, game asset, white background.`,
+                    aspect_ratio: "1:1"
+                });
+                
+                // Save as Data URL
+                p.textureUrl = await urlToDataUrl(imgResult.url);
+                p.color = '#ffffff'; // Reset color so texture shows cleanly
+                
+            } catch (err) {
+                console.warn(`Failed to generate texture for ${p.text}`, err);
+            }
+        }
+        aiSteps[0].innerHTML = `<span class="step-icon">🎨</span> Game Pieces Created & Painted!`;
+    }
 
     updateStep(0, 'done');
 
